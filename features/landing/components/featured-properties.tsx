@@ -8,7 +8,10 @@ import { SectionHeading } from "@/features/landing/components/section-heading";
 
 export function FeaturedProperties() {
   return (
-    <section id="properties" className="scroll-mt-24 bg-white py-16 sm:py-20">
+    <section
+      id="properties"
+      className="scroll-mt-24 bg-[var(--background)] py-16 sm:py-20"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow="Latest Properties"
@@ -24,7 +27,7 @@ export function FeaturedProperties() {
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.5, delay: index * 0.08 }}
             >
-              <Card className="overflow-hidden border-slate-200">
+              <Card className="overflow-hidden">
                 <div className="h-56 w-full">
                   <Image
                     src={property.image}
@@ -35,16 +38,16 @@ export function FeaturedProperties() {
                   />
                 </div>
                 <CardContent>
-                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-orange-600">
+                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-[var(--primary)]">
                     {property.location}
                   </p>
-                  <h3 className="mt-2 text-lg font-semibold text-slate-900">
+                  <h3 className="mt-2 text-lg font-semibold text-[var(--foreground)]">
                     {property.title}
                   </h3>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                     {property.beds} Beds | {property.baths} Baths | {property.area}
                   </p>
-                  <p className="mt-4 text-xl font-bold text-slate-900">
+                  <p className="mt-4 text-xl font-bold text-[var(--foreground)]">
                     {property.price}
                   </p>
                 </CardContent>

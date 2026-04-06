@@ -11,13 +11,13 @@ export function SectionHeading({
   description,
   tone = "dark",
 }: SectionHeadingProps) {
-  const titleColor = tone === "light" ? "text-white" : "text-slate-900";
+  const titleColor = tone === "light" ? "text-white" : "text-[var(--foreground)]";
   const descriptionColor =
-    tone === "light" ? "text-slate-300" : "text-slate-600";
+    tone === "light" ? "text-slate-300" : "text-[var(--muted-foreground)]";
 
   return (
     <div className="mx-auto mb-10 max-w-2xl text-center">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-600">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--primary)]">
         {eyebrow}
       </p>
       <h2

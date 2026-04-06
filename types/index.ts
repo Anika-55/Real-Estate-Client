@@ -1,1 +1,1 @@
-// Shared TypeScript types will live here.
+export * from "@/types/api";

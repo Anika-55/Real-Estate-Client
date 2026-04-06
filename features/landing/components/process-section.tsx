@@ -28,7 +28,7 @@ const steps = [
 
 export function ProcessSection() {
   return (
-    <section id="process" className="bg-white py-16 sm:py-20">
+    <section id="process" className="bg-[var(--background)] py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow="How It Works"
@@ -42,15 +42,15 @@ export function ProcessSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.4 }}
               transition={{ duration: 0.45, delay: index * 0.08 }}
-              className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+              className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5"
             >
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-orange-600">
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--primary)]">
                 Step {step.id}
               </p>
-              <h3 className="mt-2 text-lg font-semibold text-slate-900">
+              <h3 className="mt-2 text-lg font-semibold text-[var(--foreground)]">
                 {step.title}
               </h3>
-              <p className="mt-2 text-sm text-slate-600">{step.text}</p>
+              <p className="mt-2 text-sm text-[var(--muted-foreground)]">{step.text}</p>
             </motion.article>
           ))}
         </div>

@@ -57,7 +57,12 @@ export function HeroSection() {
             <Button size="lg" onClick={goToSection("properties")}>
               Explore Properties
             </Button>
-            <Button variant="outline" size="lg" onClick={goToSection("contact")}>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={goToSection("contact")}
+              className="border-white/50 bg-black/25 text-white hover:bg-black/40"
+            >
               Book Free Consultation
             </Button>
           </div>

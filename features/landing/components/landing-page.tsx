@@ -11,7 +11,7 @@ import { SocialProofSection } from "@/features/landing/components/social-proof-s
 
 export function LandingPage() {
   return (
-    <main id="main-content" className="bg-white">
+    <main id="main-content" className="bg-[var(--background)] text-[var(--foreground)]">
       <div className="relative">
         <LandingHeader />
         <HeroSection />
