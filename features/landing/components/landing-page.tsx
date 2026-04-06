@@ -7,15 +7,17 @@ import { LandingHeader } from "@/features/landing/components/landing-header";
 import { MetricsStrip } from "@/features/landing/components/metrics-strip";
 import { NewsletterSection } from "@/features/landing/components/newsletter-section";
 import { ProcessSection } from "@/features/landing/components/process-section";
+import { SocialProofSection } from "@/features/landing/components/social-proof-section";
 
 export function LandingPage() {
   return (
-    <main className="bg-white">
+    <main id="main-content" className="bg-white">
       <div className="relative">
         <LandingHeader />
         <HeroSection />
       </div>
       <MetricsStrip />
+      <SocialProofSection />
       <FeaturedProperties />
       <AmenitiesSection />
       <ProcessSection />

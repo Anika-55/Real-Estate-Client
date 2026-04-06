@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export function NewsletterSection() {
   return (
-    <section className="bg-white py-16 sm:py-20">
+    <section id="contact" className="scroll-mt-24 bg-white py-16 sm:py-20">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

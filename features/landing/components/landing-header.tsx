@@ -2,9 +2,13 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
-const links = ["Properties", "Amenities", "Agents", "Contact"];
+const links = [
+  { label: "Properties", href: "#properties" },
+  { label: "Amenities", href: "#amenities" },
+  { label: "Agents", href: "#agents" },
+  { label: "Contact", href: "#contact" },
+];
 
 export function LandingHeader() {
   return (
@@ -20,18 +24,21 @@ export function LandingHeader() {
         </Link>
         <nav className="hidden items-center gap-6 md:flex">
           {links.map((link) => (
-            <a
-              key={link}
-              href="#"
+            <Link
+              key={link.label}
+              href={link.href}
               className="text-sm font-medium text-slate-200 transition hover:text-white"
             >
-              {link}
-            </a>
+              {link.label}
+            </Link>
           ))}
         </nav>
-        <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+        <Link
+          href="#contact"
+          className="hidden h-9 items-center justify-center rounded-md border border-white/50 px-4 text-xs font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:inline-flex"
+        >
           Book Visit
-        </Button>
+        </Link>
       </div>
     </motion.header>
   );

@@ -6,19 +6,34 @@ import { Button } from "@/components/ui/button";
 import { heroVideoSources } from "@/features/landing/data/landing-data";
 
 export function HeroSection() {
+  const goToSection = (id: string) => () => {
+    const target = document.getElementById(id);
+    if (target) {
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+      target.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    }
+  };
+
   return (
-    <section className="relative min-h-[90vh] overflow-hidden bg-slate-950">
+    <section id="home" className="relative min-h-[90vh] overflow-hidden bg-slate-950">
       <video
         className="absolute inset-0 h-full w-full object-cover"
         autoPlay
         loop
         muted
         playsInline
-        preload="metadata"
+        preload="auto"
+        poster="/images/landing-reference.png"
       >
         {heroVideoSources.map((src) => (
           <source key={src} src={src} type="video/mp4" />
         ))}
+        Your browser does not support the video tag.
       </video>
       <div className="absolute inset-0 bg-slate-950/55" />
       <div className="relative mx-auto flex min-h-[90vh] max-w-7xl items-end px-4 pb-16 pt-28 sm:px-6 lg:px-8">
@@ -39,8 +54,10 @@ export function HeroSection() {
             villas with verified listings and expert guidance.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button size="lg">Explore Properties</Button>
-            <Button variant="outline" size="lg">
+            <Button size="lg" onClick={goToSection("properties")}>
+              Explore Properties
+            </Button>
+            <Button variant="outline" size="lg" onClick={goToSection("contact")}>
               Book Free Consultation
             </Button>
           </div>

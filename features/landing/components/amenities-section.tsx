@@ -7,7 +7,7 @@ import { SectionHeading } from "@/features/landing/components/section-heading";
 
 export function AmenitiesSection() {
   return (
-    <section className="bg-slate-50 py-16 sm:py-20">
+    <section id="amenities" className="scroll-mt-24 bg-slate-50 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow="Real Amenities"
@@ -25,8 +25,8 @@ export function AmenitiesSection() {
             >
               <Card className="h-full border-slate-200 bg-white">
                 <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-orange-100 text-lg font-semibold text-orange-700">
-                    {amenity.icon}
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-orange-100 text-orange-700">
+                    <amenity.icon className="h-5 w-5" aria-hidden="true" />
                   </span>
                   <p className="text-sm font-medium text-slate-700">{amenity.title}</p>
                 </CardContent>

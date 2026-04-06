@@ -8,7 +8,7 @@ import { SectionHeading } from "@/features/landing/components/section-heading";
 
 export function AgentsSection() {
   return (
-    <section className="bg-slate-950 py-16 sm:py-20">
+    <section id="agents" className="scroll-mt-24 bg-slate-950 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow="Our Agents"

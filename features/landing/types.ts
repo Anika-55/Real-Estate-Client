@@ -1,3 +1,5 @@
+import type { LucideIcon } from "lucide-react";
+
 export type Property = {
   id: number;
   title: string;
@@ -12,7 +14,7 @@ export type Property = {
 export type Amenity = {
   id: number;
   title: string;
-  icon: string;
+  icon: LucideIcon;
 };
 
 export type Agent = {
@@ -20,4 +22,17 @@ export type Agent = {
   name: string;
   role: string;
   image: string;
+};
+
+export type SocialLogo = {
+  id: number;
+  name: string;
+};
+
+export type Testimonial = {
+  id: number;
+  quote: string;
+  author: string;
+  role: string;
+  rating: number;
 };
