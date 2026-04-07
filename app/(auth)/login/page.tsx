@@ -1,7 +1,5 @@
+import { AuthBlock } from "@/features/auth/components/auth-block";
+
 export default function LoginPage() {
-  return (
-    <main className="flex min-h-screen items-center justify-center p-8">
-      <h1 className="text-2xl font-semibold">Login Page Placeholder</h1>
-    </main>
-  );
+  return <AuthBlock mode="login" />;
 }

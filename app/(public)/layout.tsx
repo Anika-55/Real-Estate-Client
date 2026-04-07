@@ -1,7 +1,14 @@
+import { LandingHeader } from "@/features/landing/components/landing-header";
+
 export default function PublicLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <>{children}</>;
+  return (
+    <>
+      <LandingHeader />
+      {children}
+    </>
+  );
 }
