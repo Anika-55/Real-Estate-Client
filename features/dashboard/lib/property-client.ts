@@ -1,4 +1,4 @@
-import { appConfig } from "@/lib/config";
+import { authApiRequest } from "@/features/auth/lib/auth-client";
 
 interface PropertyOwner {
   id: string;
@@ -33,11 +33,6 @@ export interface FavoriteListItem {
   property: PropertyListItem;
 }
 
-interface ApiEnvelope<T> {
-  message?: string;
-  data?: T;
-}
-
 export interface PaginationMeta {
   total: number;
   page: number;
@@ -66,11 +61,6 @@ interface CreatePropertyInput {
 }
 
 export async function createPropertyListing(input: CreatePropertyInput) {
-  const token = localStorage.getItem("realestate_access_token");
-  if (!token) {
-    throw new Error("Session expired. Please login again.");
-  }
-
   const formData = new FormData();
   formData.append("title", input.title.trim());
   formData.append("description", input.description.trim());
@@ -92,66 +82,20 @@ export async function createPropertyListing(input: CreatePropertyInput) {
 
   input.images.forEach((file) => formData.append("images", file));
 
-  const response = await fetch(
-    `${appConfig.publicApiBaseUrl.replace(/\/+$/, "")}/properties`,
-    {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${token}`,
-      },
-      body: formData,
-      credentials: "include",
-      cache: "no-store",
-    }
-  );
-
-  const payload = (await response.json().catch(() => null)) as
-    | { message?: string }
-    | null;
-
-  if (!response.ok) {
-    const message =
-      payload?.message && typeof payload.message === "string"
-        ? payload.message
-        : `Request failed with status ${response.status}`;
-    throw new Error(message);
-  }
-
-  return payload;
+  return authApiRequest<unknown>("/properties", {
+    method: "POST",
+    body: formData,
+  });
 }
 
 export async function fetchMyProperties(page = 1, limit = 5) {
-  const token = localStorage.getItem("realestate_access_token");
-  if (!token) {
-    throw new Error("Session expired. Please login again.");
-  }
-
-  const response = await fetch(
-    `${appConfig.publicApiBaseUrl.replace(/\/+$/, "")}/properties/mine?page=${page}&limit=${limit}`,
-    {
-      method: "GET",
-      headers: {
-        authorization: `Bearer ${token}`,
-      },
-      credentials: "include",
-      cache: "no-store",
-    }
+  const payload = await authApiRequest<PaginatedList<PropertyListItem>>(
+    `/properties/mine?page=${page}&limit=${limit}`,
+    { method: "GET" }
   );
 
-  const payload = (await response.json().catch(() => null)) as
-    | ApiEnvelope<PaginatedList<PropertyListItem>>
-    | null;
-
-  if (!response.ok) {
-    const message =
-      payload?.message && typeof payload.message === "string"
-        ? payload.message
-        : `Request failed with status ${response.status}`;
-    throw new Error(message);
-  }
-
   return (
-    payload?.data ?? {
+    payload ?? {
       data: [],
       pagination: {
         total: 0,
@@ -165,37 +109,13 @@ export async function fetchMyProperties(page = 1, limit = 5) {
 }
 
 export async function fetchMyFavorites(page = 1, limit = 9) {
-  const token = localStorage.getItem("realestate_access_token");
-  if (!token) {
-    throw new Error("Session expired. Please login again.");
-  }
-
-  const response = await fetch(
-    `${appConfig.publicApiBaseUrl.replace(/\/+$/, "")}/user/favorites?page=${page}&limit=${limit}`,
-    {
-      method: "GET",
-      headers: {
-        authorization: `Bearer ${token}`,
-      },
-      credentials: "include",
-      cache: "no-store",
-    }
+  const payload = await authApiRequest<PaginatedList<FavoriteListItem>>(
+    `/user/favorites?page=${page}&limit=${limit}`,
+    { method: "GET" }
   );
 
-  const payload = (await response.json().catch(() => null)) as
-    | ApiEnvelope<PaginatedList<FavoriteListItem>>
-    | null;
-
-  if (!response.ok) {
-    const message =
-      payload?.message && typeof payload.message === "string"
-        ? payload.message
-        : `Request failed with status ${response.status}`;
-    throw new Error(message);
-  }
-
   return (
-    payload?.data ?? {
+    payload ?? {
       data: [],
       pagination: {
         total: 0,

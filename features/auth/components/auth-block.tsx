@@ -62,10 +62,6 @@ export function AuthBlock({ mode }: AuthBlockProps) {
         ? await login({ email, password })
         : await register({ name, email, password, phone: phone || undefined });
 
-      const token = payload.data.accessToken;
-      localStorage.setItem("realestate_access_token", token);
-      localStorage.setItem("realestate_user", JSON.stringify(payload.data.user));
-
       toast.success(payload.message ?? (isLogin ? "Login successful" : "Registration successful"));
       router.push("/dashboard");
       router.refresh();

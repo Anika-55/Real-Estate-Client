@@ -43,6 +43,11 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  getStoredAccessToken,
+  logoutFromServer,
+  refreshAccessToken,
+} from "@/features/auth/lib/auth-client";
+import {
   updateMyProfile,
   uploadMyProfileAvatar,
 } from "@/features/dashboard/lib/profile-client";
@@ -1602,7 +1607,9 @@ function ReviewsContent({
           {isLoading ? (
             <div className="p-4 text-sm text-slate-500">Loading...</div>
           ) : reviews.length ? (
-            reviews.map((review) => (
+            reviews.map((review) => {
+              const reviewImages = review.images ?? [];
+              return (
             <article key={review.id} className="space-y-4 py-5 first:pt-0 last:pb-0">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -1616,7 +1623,7 @@ function ReviewsContent({
                     <p className="text-xl font-semibold text-slate-900">{review.name}</p>
                     <p className="text-sm text-slate-500">{review.date}</p>
                     <p className="text-xs text-slate-500">
-                      {review.propertyTitle} • {review.propertyLocation}
+                      {review.propertyTitle} - {review.propertyLocation}
                     </p>
                   </div>
                 </div>
@@ -1632,13 +1639,13 @@ function ReviewsContent({
 
               <p className="leading-7 text-slate-600">{review.comment}</p>
 
-              {review.images?.length ? (
+              {reviewImages.length ? (
                 <div className="flex gap-2 overflow-x-auto">
-                  {review.images.map((img, index) => (
+                  {reviewImages.map((img, index) => (
                     <div key={img} className="relative shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={img} alt={`review-${index}`} className="h-20 w-24 rounded-lg object-cover" />
-                      {index === review.images.length - 1 ? (
+                      {index === reviewImages.length - 1 ? (
                         <span className="absolute inset-0 grid place-items-center rounded-lg bg-black/45 text-sm font-semibold text-white">
                           13+
                         </span>
@@ -1663,7 +1670,8 @@ function ReviewsContent({
                 </button>
               </div>
             </article>
-            ))
+              );
+            })
           ) : (
             <div className="p-4 text-sm text-slate-500">No reviews found.</div>
           )}
@@ -1808,74 +1816,92 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("realestate_access_token");
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
+    let active = true;
 
-    const rawUser = localStorage.getItem("realestate_user");
-    if (rawUser) {
-      try {
-        const parsed = JSON.parse(rawUser) as {
-          name?: string;
-          email?: string;
-          phone?: string;
-          role?: string;
-          avatarUrl?: string | null;
-        };
-
-        const fullName = parsed.name ?? "";
-        const names = splitName(fullName);
-        const username = parsed.email
-          ? parsed.email.split("@")[0] ?? ""
-          : `${names.firstName}${names.lastName}`.toLowerCase();
-
-        const normalized: ProfileFormState = {
-          ...emptyProfileForm,
-          username,
-          firstName: names.firstName,
-          lastName: names.lastName,
-          email: parsed.email ?? "",
-          position: parsed.role ?? "AGENT",
-          phone: parsed.phone ?? "",
-          website: parsed.email ? `https://${parsed.email.split("@")[1]}` : "",
-          about: fullName
-            ? `I am ${fullName}, and I am currently managing real-estate activities from the admin dashboard.`
-            : emptyProfileForm.about,
-          network1: fullName
-            ? `https://facebook.com/${fullName.replace(/\s+/g, "").toLowerCase()}`
-            : "",
-          network2: fullName
-            ? `https://twitter.com/${fullName.replace(/\s+/g, "").toLowerCase()}`
-            : "",
-          address: "19 Westkey Way",
-        };
-
-        if (fullName) {
-          setUserName(fullName);
+    const bootstrapSession = async () => {
+      const token = getStoredAccessToken();
+      if (!token) {
+        try {
+          await refreshAccessToken();
+        } catch {
+          if (active) {
+            router.replace("/login");
+          }
+          return;
         }
-
-        if (parsed.avatarUrl) {
-          setAvatarUrl(parsed.avatarUrl);
-        }
-
-        if (
-          parsed.role === "ADMIN" ||
-          parsed.role === "AGENT" ||
-          parsed.role === "USER"
-        ) {
-          setUserRole(parsed.role);
-        }
-
-        setProfileForm(normalized);
-        setInitialProfileForm(normalized);
-      } catch {
-        setUserName("Admin");
       }
-    }
 
-    setIsCheckingAuth(false);
+      const rawUser = localStorage.getItem("realestate_user");
+      if (rawUser) {
+        try {
+          const parsed = JSON.parse(rawUser) as {
+            name?: string;
+            email?: string;
+            phone?: string;
+            role?: string;
+            avatarUrl?: string | null;
+          };
+
+          const fullName = parsed.name ?? "";
+          const names = splitName(fullName);
+          const username = parsed.email
+            ? parsed.email.split("@")[0] ?? ""
+            : `${names.firstName}${names.lastName}`.toLowerCase();
+
+          const normalized: ProfileFormState = {
+            ...emptyProfileForm,
+            username,
+            firstName: names.firstName,
+            lastName: names.lastName,
+            email: parsed.email ?? "",
+            position: parsed.role ?? "AGENT",
+            phone: parsed.phone ?? "",
+            website: parsed.email ? `https://${parsed.email.split("@")[1]}` : "",
+            about: fullName
+              ? `I am ${fullName}, and I am currently managing real-estate activities from the admin dashboard.`
+              : emptyProfileForm.about,
+            network1: fullName
+              ? `https://facebook.com/${fullName.replace(/\s+/g, "").toLowerCase()}`
+              : "",
+            network2: fullName
+              ? `https://twitter.com/${fullName.replace(/\s+/g, "").toLowerCase()}`
+              : "",
+            address: "19 Westkey Way",
+          };
+
+          if (fullName) {
+            setUserName(fullName);
+          }
+
+          if (parsed.avatarUrl) {
+            setAvatarUrl(parsed.avatarUrl);
+          }
+
+          if (
+            parsed.role === "ADMIN" ||
+            parsed.role === "AGENT" ||
+            parsed.role === "USER"
+          ) {
+            setUserRole(parsed.role);
+          }
+
+          setProfileForm(normalized);
+          setInitialProfileForm(normalized);
+        } catch {
+          setUserName("Admin");
+        }
+      }
+
+      if (active) {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    void bootstrapSession();
+
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   useEffect(() => {
@@ -2058,10 +2084,16 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
   );
 
   const handleLogout = () => {
-    localStorage.removeItem("realestate_access_token");
-    localStorage.removeItem("realestate_user");
-    toast.success("Logged out successfully");
-    router.push("/login");
+    void (async () => {
+      try {
+        await logoutFromServer();
+        toast.success("Logged out successfully");
+      } catch {
+        toast.error("Failed to logout from server. Local session cleared.");
+      } finally {
+        router.push("/login");
+      }
+    })();
   };
 
   const handleProfileSave = async () => {

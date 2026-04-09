@@ -1,5 +1,4 @@
-import { appConfig } from "@/lib/config";
-import { apiClient } from "@/lib/api-client";
+import { authApiRequest } from "@/features/auth/lib/auth-client";
 
 interface ProfileApiPayload {
   id: string;
@@ -19,54 +18,23 @@ interface UpdateProfileInput {
 }
 
 export async function updateMyProfile(input: UpdateProfileInput) {
-  const token = localStorage.getItem("realestate_access_token");
-
-  if (!token) {
-    throw new Error("Session expired. Please login again.");
-  }
-
-  return apiClient<ProfileApiPayload>("/user/profile", {
+  const data = await authApiRequest<ProfileApiPayload>("/user/profile", {
     method: "PATCH",
-    body: input,
+    body: JSON.stringify(input),
     headers: {
-      authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
   });
+
+  return { data, message: "User profile updated successfully" };
 }
 
 export async function uploadMyProfileAvatar(file: File) {
-  const token = localStorage.getItem("realestate_access_token");
-  if (!token) {
-    throw new Error("Session expired. Please login again.");
-  }
-
   const formData = new FormData();
   formData.append("avatar", file);
 
-  const response = await fetch(
-    `${appConfig.publicApiBaseUrl.replace(/\/+$/, "")}/user/profile/avatar`,
-    {
-      method: "PATCH",
-      headers: {
-        authorization: `Bearer ${token}`,
-      },
-      body: formData,
-      credentials: "include",
-      cache: "no-store",
-    }
-  );
-
-  const payload = (await response.json().catch(() => null)) as
-    | { message?: string; data?: ProfileApiPayload }
-    | null;
-
-  if (!response.ok || !payload?.data) {
-    const message =
-      payload?.message && typeof payload.message === "string"
-        ? payload.message
-        : `Avatar upload failed with status ${response.status}`;
-    throw new Error(message);
-  }
-
-  return payload.data;
+  return authApiRequest<ProfileApiPayload>("/user/profile/avatar", {
+    method: "PATCH",
+    body: formData,
+  });
 }
