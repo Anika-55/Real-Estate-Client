@@ -48,7 +48,7 @@ export function AuthBlock({ mode }: AuthBlockProps) {
 
   const submitLabel = isLogin ? "Login" : "Create account";
   const switchLabel = isLogin
-    ? "Don’t have an account?"
+    ? "Don't have an account?"
     : "Already have an account?";
   const switchHref = isLogin ? "/register" : "/login";
   const switchCta = isLogin ? "Register" : "Login";
@@ -64,9 +64,10 @@ export function AuthBlock({ mode }: AuthBlockProps) {
 
       const token = payload.data.accessToken;
       localStorage.setItem("realestate_access_token", token);
+      localStorage.setItem("realestate_user", JSON.stringify(payload.data.user));
 
       toast.success(payload.message ?? (isLogin ? "Login successful" : "Registration successful"));
-      router.push("/");
+      router.push("/dashboard");
       router.refresh();
     } catch (error) {
       const message =
