@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import type { PropertyDetail } from "@/features/properties/types/property";
+import type { PropertySummary } from "@/features/properties/types/property";
 
 type PropertyCardProps = {
-  property: PropertyDetail;
+  property: PropertySummary;
 };
 
 export function PropertyCard({ property }: PropertyCardProps) {

@@ -6,7 +6,7 @@ export type PropertyFaq = {
 export type PropertyDetail = {
   id: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   location: string;
   price: string;
   heroImage: string;
@@ -23,3 +23,8 @@ export type PropertyDetail = {
   features: string[];
   faqs: PropertyFaq[];
 };
+
+export type PropertySummary = Pick<
+  PropertyDetail,
+  "id" | "title" | "location" | "price" | "heroImage"
+>;

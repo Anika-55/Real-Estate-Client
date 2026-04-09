@@ -372,6 +372,30 @@ function DashboardSidebar({
 }
 
 function OverviewContent({ isChartReady }: { isChartReady: boolean }) {
+  const chartContainerRef = useRef<HTMLDivElement | null>(null);
+  const [canRenderChart, setCanRenderChart] = useState(false);
+
+  useEffect(() => {
+    const node = chartContainerRef.current;
+    if (!node) {
+      return;
+    }
+
+    const updateChartBounds = () => {
+      const { width, height } = node.getBoundingClientRect();
+      setCanRenderChart(width > 0 && height > 0);
+    };
+
+    updateChartBounds();
+
+    const observer = new ResizeObserver(updateChartBounds);
+    observer.observe(node);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   return (
     <>
       <Card className="border-0 bg-white shadow-sm">
@@ -407,8 +431,8 @@ function OverviewContent({ isChartReady }: { isChartReady: boolean }) {
               </div>
             </div>
 
-            <div className="h-[280px] w-full min-w-0 sm:h-[320px]">
-              {isChartReady ? (
+            <div ref={chartContainerRef} className="h-[280px] w-full min-w-0 sm:h-[320px]">
+              {isChartReady && canRenderChart ? (
                 <ResponsiveContainer
                   width="100%"
                   height="100%"

@@ -1,23 +1,16 @@
 import { notFound } from "next/navigation";
 import { PropertyDetailsPage } from "@/features/properties/components/property-details-page";
-import {
-  getPropertyById,
-  properties,
-} from "@/features/properties/data/properties";
+import { fetchPublicPropertyById } from "@/features/properties/lib/public-property-client";
 
 type PropertyDetailsRouteProps = {
   params: Promise<{ id: string }>;
 };
 
-export function generateStaticParams() {
-  return properties.map((property) => ({ id: property.id }));
-}
-
 export default async function PropertyDetailsRoute({
   params,
 }: PropertyDetailsRouteProps) {
   const { id } = await params;
-  const property = getPropertyById(id);
+  const property = await fetchPublicPropertyById(id);
 
   if (!property) {
     notFound();
