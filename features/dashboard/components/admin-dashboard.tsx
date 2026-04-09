@@ -58,6 +58,12 @@ import {
   fetchMyReviews,
   type DashboardReviewItem,
 } from "@/features/dashboard/lib/review-client";
+import {
+  cancelBookingById,
+  confirmBookingById,
+  fetchMyBookings,
+  type BookingListItem,
+} from "@/features/bookings/lib/booking-client";
 import { cn } from "@/lib/utils";
 
 const stats = [
@@ -127,6 +133,7 @@ const sidebarGroups: Array<{ title: string; items: SidebarItem[] }> = [
     title: "Listing",
     items: [
       { label: "My Properties", icon: FiHome, href: "/dashboard/my-properties" },
+      { label: "Bookings", icon: FiBookmark, href: "/dashboard/bookings" },
       { label: "Add New Property", icon: FiPlus, href: "/dashboard/add-property" },
       { label: "Favourites", icon: FiHeart, href: "/dashboard/favourites" },
       { label: "Saved Search", icon: FiSearch, href: "/dashboard/saved-search" },
@@ -158,6 +165,7 @@ type DashboardMode =
   | "profile"
   | "add-property"
   | "my-properties"
+  | "bookings"
   | "favourites"
   | "reviews"
   | "saved-search";
@@ -1426,6 +1434,111 @@ function FavouritesContent({
   );
 }
 
+function BookingsContent({
+  bookings,
+  isLoading,
+  isActionPending,
+  canConfirm,
+  onCancel,
+  onConfirm,
+}: {
+  bookings: BookingListItem[];
+  isLoading: boolean;
+  isActionPending: boolean;
+  canConfirm: boolean;
+  onCancel: (bookingId: string) => Promise<void>;
+  onConfirm: (bookingId: string) => Promise<void>;
+}) {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-slate-500">
+        {isLoading
+          ? "Loading bookings..."
+          : `You have ${bookings.length} booking${bookings.length === 1 ? "" : "s"}`}
+      </p>
+
+      <Card className="border-0 bg-white shadow-sm">
+        <CardContent className="p-3 sm:p-4">
+          <div className="hidden rounded-lg bg-black px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-white/90 md:grid md:grid-cols-[2fr_1fr_1fr_120px_160px]">
+            <span>Property</span>
+            <span>Date</span>
+            <span>Status</span>
+            <span>Price</span>
+            <span className="text-right">Action</span>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {isLoading ? (
+              <div className="p-6 text-sm text-slate-500">Loading...</div>
+            ) : bookings.length ? (
+              bookings.map((booking) => (
+                <article
+                  key={booking.id}
+                  className="grid gap-3 py-4 md:grid-cols-[2fr_1fr_1fr_120px_160px] md:items-center md:px-2"
+                >
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {booking.property.title}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {booking.property.address}, {booking.property.city}
+                    </p>
+                  </div>
+
+                  <p className="text-sm text-slate-500">{formatDate(booking.date)}</p>
+
+                  <span
+                    className={cn(
+                      "inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold",
+                      booking.status === "CONFIRMED"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
+                    )}
+                  >
+                    {booking.status}
+                  </span>
+
+                  <p className="text-sm font-semibold text-slate-800">
+                    {priceFormatter.format(Number(booking.property.price))}
+                  </p>
+
+                  <div className="ml-auto flex items-center gap-2">
+                    {canConfirm && booking.status === "PENDING" ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-8 bg-emerald-600 px-3 text-xs text-white hover:bg-emerald-700"
+                        disabled={isActionPending}
+                        onClick={() => void onConfirm(booking.id)}
+                      >
+                        Confirm
+                      </Button>
+                    ) : null}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-3 text-xs"
+                      disabled={isActionPending}
+                      onClick={() => void onCancel(booking.id)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="p-8 text-center text-sm text-slate-500">
+                No bookings found.
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 type ReviewItem = {
   id: string;
   name: string;
@@ -1657,9 +1770,12 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
   const [isSavingProperty, setIsSavingProperty] = useState(false);
   const [isLoadingMyProperties, setIsLoadingMyProperties] = useState(false);
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(false);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [isBookingActionPending, setIsBookingActionPending] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [userName, setUserName] = useState("Admin");
+  const [userRole, setUserRole] = useState<"USER" | "ADMIN" | "AGENT">("USER");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileForm, setProfileForm] = useState<ProfileFormState>(emptyProfileForm);
   const [initialProfileForm, setInitialProfileForm] = useState<ProfileFormState>(emptyProfileForm);
@@ -1675,10 +1791,12 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
     useState<PaginationMeta>(fallbackPagination);
   const [myFavoritesPagination, setMyFavoritesPagination] =
     useState<PaginationMeta>(fallbackPagination);
+  const [myBookings, setMyBookings] = useState<BookingListItem[]>([]);
   const [myReviews, setMyReviews] = useState<ReviewItem[]>([]);
   const [myReviewsPagination, setMyReviewsPagination] =
     useState<PaginationMeta>(fallbackPagination);
   const [myPropertiesPage, setMyPropertiesPage] = useState(1);
+  const [bookingsReloadToken, setBookingsReloadToken] = useState(0);
   const [favoritesPage, setFavoritesPage] = useState(1);
   const [reviewsPage, setReviewsPage] = useState(1);
   const [savedSearchPage, setSavedSearchPage] = useState(1);
@@ -1740,6 +1858,14 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
 
         if (parsed.avatarUrl) {
           setAvatarUrl(parsed.avatarUrl);
+        }
+
+        if (
+          parsed.role === "ADMIN" ||
+          parsed.role === "AGENT" ||
+          parsed.role === "USER"
+        ) {
+          setUserRole(parsed.role);
         }
 
         setProfileForm(normalized);
@@ -1839,6 +1965,38 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
   }, [mode, favoritesPage]);
 
   useEffect(() => {
+    if (mode !== "bookings") {
+      return;
+    }
+
+    let ignore = false;
+    const load = async () => {
+      setIsLoadingBookings(true);
+      try {
+        const result = await fetchMyBookings();
+        if (!ignore) {
+          setMyBookings(result);
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to load bookings";
+        if (!ignore) {
+          toast.error(message);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingBookings(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      ignore = true;
+    };
+  }, [mode, bookingsReloadToken]);
+
+  useEffect(() => {
     if (mode !== "reviews") {
       return;
     }
@@ -1878,6 +2036,8 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
         ? "Add New Property"
         : mode === "my-properties"
           ? "My Properties"
+          : mode === "bookings"
+            ? "Bookings"
           : mode === "favourites"
             ? "Favourites"
             : mode === "reviews"
@@ -1943,6 +2103,13 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
       localStorage.setItem("realestate_user", JSON.stringify(updatedUser));
       setUserName(updatedUser.name);
       setAvatarUrl(updatedUser.avatarUrl);
+      if (
+        updatedUser.role === "ADMIN" ||
+        updatedUser.role === "AGENT" ||
+        updatedUser.role === "USER"
+      ) {
+        setUserRole(updatedUser.role);
+      }
       setProfileForm(normalizedForm);
       setInitialProfileForm(normalizedForm);
       toast.success(response.message ?? "Profile updated successfully");
@@ -1964,6 +2131,40 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
     toast.success("Saved search deleted");
   };
 
+  const reloadBookings = () => {
+    setBookingsReloadToken((prev) => prev + 1);
+  };
+
+  const handleCancelBooking = async (bookingId: string) => {
+    setIsBookingActionPending(true);
+    try {
+      await cancelBookingById(bookingId);
+      toast.success("Booking cancelled successfully");
+      reloadBookings();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to cancel booking";
+      toast.error(message);
+    } finally {
+      setIsBookingActionPending(false);
+    }
+  };
+
+  const handleConfirmBooking = async (bookingId: string) => {
+    setIsBookingActionPending(true);
+    try {
+      await confirmBookingById(bookingId);
+      toast.success("Booking confirmed successfully");
+      reloadBookings();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to confirm booking";
+      toast.error(message);
+    } finally {
+      setIsBookingActionPending(false);
+    }
+  };
+
   const handlePhotoUpload = async (file: File) => {
     setIsUploadingPhoto(true);
     try {
@@ -1983,6 +2184,13 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
       localStorage.setItem("realestate_user", JSON.stringify(mergedUser));
       setUserName(updated.name);
       setAvatarUrl(updated.avatarUrl);
+      if (
+        updated.role === "ADMIN" ||
+        updated.role === "AGENT" ||
+        updated.role === "USER"
+      ) {
+        setUserRole(updated.role);
+      }
       toast.success("Profile photo updated successfully");
     } catch (error) {
       const message =
@@ -2168,6 +2376,15 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
                 isLoading={isLoadingMyProperties}
                 pagination={myPropertiesPagination}
                 onPageChange={setMyPropertiesPage}
+              />
+            ) : mode === "bookings" ? (
+              <BookingsContent
+                bookings={myBookings}
+                isLoading={isLoadingBookings}
+                isActionPending={isBookingActionPending}
+                canConfirm={userRole === "ADMIN" || userRole === "AGENT"}
+                onCancel={handleCancelBooking}
+                onConfirm={handleConfirmBooking}
               />
             ) : mode === "favourites" ? (
               <FavouritesContent

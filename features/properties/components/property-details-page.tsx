@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BookSiteVisitCard } from "@/features/properties/components/book-site-visit-card";
 import type { PropertyDetail } from "@/features/properties/types/property";
 
 type PropertyDetailsPageProps = {
@@ -117,7 +118,7 @@ export function PropertyDetailsPage({ property }: PropertyDetailsPageProps) {
                   Talk to our property specialist
                 </h3>
               </div>
-              <Button className="w-full">Book Site Visit</Button>
+              <BookSiteVisitCard propertyId={property.id} />
               <Link href="/property" className="block">
                 <Button variant="outline" className="w-full">
                   Back to Properties
