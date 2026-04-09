@@ -54,6 +54,10 @@ import {
   type PaginationMeta,
   type PropertyListItem,
 } from "@/features/dashboard/lib/property-client";
+import {
+  fetchMyReviews,
+  type DashboardReviewItem,
+} from "@/features/dashboard/lib/review-client";
 import { cn } from "@/lib/utils";
 
 const stats = [
@@ -1429,77 +1433,50 @@ type ReviewItem = {
   rating: number;
   comment: string;
   avatar: string;
+  propertyTitle: string;
+  propertyLocation: string;
   images?: string[];
 };
 
-const seededReviews: ReviewItem[] = [
-  {
-    id: "r1",
-    name: "Zubayer Al Hasan",
-    date: "17 Aug, 23",
-    rating: 4.7,
-    comment:
-      "Lorem ipsum dolor sit amet consectetur. Pellentesque sed nulla facil diam posuere aliquam suscipit quam.",
-    avatar: "https://i.pravatar.cc/80?img=12",
-  },
-  {
-    id: "r2",
-    name: "Rashed Kabir",
-    date: "13 Aug, 23",
-    rating: 4.9,
-    comment:
-      "Lorem ipsum dolor sit amet consectetur. Pellentesque sed nulla facil diam posuere aliquam suscipit quam.",
-    avatar: "https://i.pravatar.cc/80?img=15",
-    images: [
-      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=200&q=60",
-      "https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?auto=format&fit=crop&w=200&q=60",
-      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=200&q=60",
-      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=200&q=60",
-    ],
-  },
-  {
-    id: "r3",
-    name: "Mithila Rahman",
-    date: "17 Aug, 23",
-    rating: 4.7,
-    comment:
-      "Lorem ipsum dolor sit amet consectetur. Amet amet id cursus dignissim. Eget vitae amet tempus sit mattis.",
-    avatar: "https://i.pravatar.cc/80?img=45",
-  },
-  {
-    id: "r4",
-    name: "Zubayer Al Hasan",
-    date: "17 Aug, 23",
-    rating: 4.7,
-    comment:
-      "Lorem ipsum dolor sit amet consectetur. Pellentesque sed nulla facil diam posuere aliquam suscipit quam.",
-    avatar: "https://i.pravatar.cc/80?img=12",
-  },
-];
+const REVIEW_AVATAR_FALLBACK = "https://placehold.co/80x80/e2e8f0/334155?text=U";
+
+function mapDashboardReviewToUi(review: DashboardReviewItem): ReviewItem {
+  return {
+    id: review.id,
+    name: review.user.name,
+    date: formatDate(review.createdAt),
+    rating: review.rating,
+    comment: review.comment ?? "No review comment provided.",
+    avatar: review.user.avatarUrl ?? REVIEW_AVATAR_FALLBACK,
+    propertyTitle: review.property.title,
+    propertyLocation: `${review.property.city}, ${review.property.country}`,
+    images: review.property.images.slice(0, 4),
+  };
+}
 
 function ReviewsContent({
   reviews,
+  isLoading,
   page,
-  totalPages,
-  total,
-  pageSize,
+  pagination,
   onPageChange,
 }: {
   reviews: ReviewItem[];
+  isLoading: boolean;
   page: number;
-  totalPages: number;
-  total: number;
-  pageSize: number;
+  pagination: PaginationMeta;
   onPageChange: (page: number) => void;
 }) {
-  const start = total ? (page - 1) * pageSize + 1 : 0;
-  const end = total ? start + reviews.length - 1 : 0;
+  const start = pagination.total ? (page - 1) * pagination.limit + 1 : 0;
+  const end = pagination.total ? start + reviews.length - 1 : 0;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-500">
-          Showing {start}-{end} of {total} results
+          {isLoading
+            ? "Loading reviews..."
+            : `Showing ${start}-${end} of ${pagination.total} results`}
         </p>
         <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1.5 text-sm">
           <span className="text-slate-500">Sort by:</span>
@@ -1509,7 +1486,10 @@ function ReviewsContent({
 
       <Card className="border-0 bg-white shadow-sm">
         <CardContent className="divide-y divide-slate-100 p-4 sm:p-6">
-          {reviews.map((review) => (
+          {isLoading ? (
+            <div className="p-4 text-sm text-slate-500">Loading...</div>
+          ) : reviews.length ? (
+            reviews.map((review) => (
             <article key={review.id} className="space-y-4 py-5 first:pt-0 last:pb-0">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -1522,6 +1502,9 @@ function ReviewsContent({
                   <div>
                     <p className="text-xl font-semibold text-slate-900">{review.name}</p>
                     <p className="text-sm text-slate-500">{review.date}</p>
+                    <p className="text-xs text-slate-500">
+                      {review.propertyTitle} • {review.propertyLocation}
+                    </p>
                   </div>
                 </div>
                 <p className="inline-flex items-center gap-1 text-sm text-slate-500">
@@ -1567,11 +1550,18 @@ function ReviewsContent({
                 </button>
               </div>
             </article>
-          ))}
+            ))
+          ) : (
+            <div className="p-4 text-sm text-slate-500">No reviews found.</div>
+          )}
         </CardContent>
       </Card>
 
-      <PaginationControls page={page} totalPages={totalPages} onChange={onPageChange} />
+      <PaginationControls
+        page={page}
+        totalPages={pagination.totalPages}
+        onChange={onPageChange}
+      />
     </div>
   );
 }
@@ -1582,15 +1572,6 @@ type SavedSearchItem = {
   date: string;
 };
 
-const seededSavedSearches: SavedSearchItem[] = [
-  { id: "s1", title: "Galaxy Family Home", date: "13 Sep, 2023" },
-  { id: "s2", title: "Big Apartments", date: "27 Aug, 2023" },
-  { id: "s3", title: "Villa in California with pool", date: "16 Jun, 2023" },
-  { id: "s4", title: "Small Houses", date: "4 Apr, 2023" },
-  { id: "s5", title: "Flat for Rent USA", date: "14 Feb, 2023" },
-  { id: "s6", title: "Apartments Near Market", date: "8 Jan, 2023" },
-  { id: "s7", title: "Home for Rent", date: "15 Dec, 2022" },
-];
 const SAVED_SEARCH_STORAGE_KEY = "dashboard_saved_searches";
 
 function SavedSearchContent({
@@ -1627,30 +1608,36 @@ function SavedSearchContent({
           </div>
 
           <div className="divide-y divide-slate-100">
-            {searches.map((item) => (
-              <article
-                key={item.id}
-                className="grid gap-2 py-4 md:grid-cols-[2fr_1fr_120px] md:items-center md:px-2"
-              >
-                <p className="text-xl font-semibold text-slate-900">{item.title}</p>
-                <p className="text-sm text-slate-500">{item.date}</p>
-                <div className="ml-auto flex items-center gap-3">
-                  <button
-                    type="button"
-                    className="inline-flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-                  >
-                    <FiEye className="size-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(item.id)}
-                    className="inline-flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-rose-600"
-                  >
-                    <FiTrash2 className="size-4" />
-                  </button>
-                </div>
-              </article>
-            ))}
+            {searches.length ? (
+              searches.map((item) => (
+                <article
+                  key={item.id}
+                  className="grid gap-2 py-4 md:grid-cols-[2fr_1fr_120px] md:items-center md:px-2"
+                >
+                  <p className="text-xl font-semibold text-slate-900">{item.title}</p>
+                  <p className="text-sm text-slate-500">{item.date}</p>
+                  <div className="ml-auto flex items-center gap-3">
+                    <button
+                      type="button"
+                      className="inline-flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                    >
+                      <FiEye className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(item.id)}
+                      className="inline-flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-rose-600"
+                    >
+                      <FiTrash2 className="size-4" />
+                    </button>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="p-8 text-center text-sm text-slate-500">
+                No saved searches yet.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1670,6 +1657,7 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
   const [isSavingProperty, setIsSavingProperty] = useState(false);
   const [isLoadingMyProperties, setIsLoadingMyProperties] = useState(false);
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [userName, setUserName] = useState("Admin");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -1687,12 +1675,14 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
     useState<PaginationMeta>(fallbackPagination);
   const [myFavoritesPagination, setMyFavoritesPagination] =
     useState<PaginationMeta>(fallbackPagination);
+  const [myReviews, setMyReviews] = useState<ReviewItem[]>([]);
+  const [myReviewsPagination, setMyReviewsPagination] =
+    useState<PaginationMeta>(fallbackPagination);
   const [myPropertiesPage, setMyPropertiesPage] = useState(1);
   const [favoritesPage, setFavoritesPage] = useState(1);
   const [reviewsPage, setReviewsPage] = useState(1);
   const [savedSearchPage, setSavedSearchPage] = useState(1);
-  const [savedSearches, setSavedSearches] =
-    useState<SavedSearchItem[]>(seededSavedSearches);
+  const [savedSearches, setSavedSearches] = useState<SavedSearchItem[]>([]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setIsChartReady(true));
@@ -1774,7 +1764,7 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
         setSavedSearches(parsed);
       }
     } catch {
-      setSavedSearches(seededSavedSearches);
+      setSavedSearches([]);
     }
   }, []);
 
@@ -1848,6 +1838,39 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
     };
   }, [mode, favoritesPage]);
 
+  useEffect(() => {
+    if (mode !== "reviews") {
+      return;
+    }
+
+    let ignore = false;
+    const load = async () => {
+      setIsLoadingReviews(true);
+      try {
+        const result = await fetchMyReviews(reviewsPage, 5);
+        if (!ignore) {
+          setMyReviews(result.data.map(mapDashboardReviewToUi));
+          setMyReviewsPagination(result.pagination);
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to load reviews";
+        if (!ignore) {
+          toast.error(message);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingReviews(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      ignore = true;
+    };
+  }, [mode, reviewsPage]);
+
   const headerTitle =
     mode === "profile"
       ? "Profile"
@@ -1864,12 +1887,6 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
         : "Dashboard";
 
   const avatarInitials = useMemo(() => initialsFromName(userName), [userName]);
-  const reviewsPageSize = 3;
-  const reviewsTotalPages = Math.max(1, Math.ceil(seededReviews.length / reviewsPageSize));
-  const paginatedReviews = seededReviews.slice(
-    (reviewsPage - 1) * reviewsPageSize,
-    reviewsPage * reviewsPageSize
-  );
   const savedSearchPageSize = 5;
   const savedSearchTotalPages = Math.max(
     1,
@@ -2161,11 +2178,10 @@ export function AdminDashboard({ mode = "overview" }: AdminDashboardProps) {
               />
             ) : mode === "reviews" ? (
               <ReviewsContent
-                reviews={paginatedReviews}
+                reviews={myReviews}
+                isLoading={isLoadingReviews}
                 page={reviewsPage}
-                totalPages={reviewsTotalPages}
-                total={seededReviews.length}
-                pageSize={reviewsPageSize}
+                pagination={myReviewsPagination}
                 onPageChange={setReviewsPage}
               />
             ) : mode === "saved-search" ? (
